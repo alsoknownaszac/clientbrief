@@ -2,26 +2,93 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap");
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  ::selection {
+    @apply bg-indigo-500/30 text-white;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-white/10 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-white/20;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-}
+@layer components {
+  .card {
+    @apply bg-card border border-border-subtle rounded-2xl p-6 transition-all duration-200;
+  }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  .card-hover {
+    @apply card hover:bg-card-hover hover:border-border;
+  }
+
+  .input-field {
+    @apply w-full bg-white/5 border border-border-subtle rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground outline-none transition-all duration-200 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white font-medium rounded-xl px-5 py-3 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 border border-border-subtle hover:border-border text-foreground font-medium rounded-xl px-5 py-3 transition-all duration-200 hover:bg-white/5 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 text-muted-foreground hover:text-foreground font-medium rounded-xl px-4 py-2 transition-all duration-200 hover:bg-white/5;
+  }
+
+  .status-dot {
+    @apply inline-block w-2 h-2 rounded-full;
+  }
+
+  .status-dot-indigo {
+    @apply status-dot bg-indigo-400 shadow-[0_0_6px_rgba(99,102,241,0.4)];
+  }
+
+  .status-dot-amber {
+    @apply status-dot bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.4)];
+  }
+
+  .status-dot-emerald {
+    @apply status-dot bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.4)];
+  }
+
+  .heading-xl {
+    @apply text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight;
+  }
+
+  .heading-lg {
+    @apply text-2xl sm:text-3xl font-bold tracking-tight;
+  }
+
+  .heading-md {
+    @apply text-xl sm:text-2xl font-semibold tracking-tight;
   }
 }
