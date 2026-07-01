@@ -33,7 +33,8 @@ begin
 end;
 $$ language plpgsql;
 
-create trigger if not exists set_updated_at
+drop trigger if exists set_updated_at on public.submissions;
+create trigger set_updated_at
   before update on public.submissions
   for each row
   execute function public.handle_updated_at();
