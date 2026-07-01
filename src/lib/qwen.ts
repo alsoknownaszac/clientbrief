@@ -5,21 +5,8 @@ const QWEN_BASE_URL =
   process.env.QWEN_BASE_URL ||
   "https://dashscope-intl.aliyuncs.com/compatible-mode/v1";
 
-// Validate required env vars at module load time (server-side only)
-if (typeof window === "undefined") {
-  if (!DASHSCOPE_API_KEY) {
-    throw new Error(
-      "DASHSCOPE_API_KEY is not set. Add it to your .env.local file.\n" +
-        "Get your API key from https://bailian.console.aliyun.com",
-    );
-  }
-  if (!QWEN_BASE_URL) {
-    throw new Error(
-      "QWEN_BASE_URL is not set. Add it to your .env.local file.\n" +
-        "Default: https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
-    );
-  }
-}
+// Env vars are validated lazily at call time, not at module import time,
+// so Next.js builds (which import all modules) don't fail when env vars are missing.
 
 export const MODELS = {
   fast: "qwen3.6-flash",
