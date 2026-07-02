@@ -47,21 +47,24 @@ create index if not exists idx_submissions_created_at on public.submissions (cre
 alter table public.submissions enable row level security;
 
 -- Allow anonymous inserts (clients submitting briefs)
-create policy if not exists "Allow anonymous inserts"
+drop policy if exists "Allow anonymous inserts" on public.submissions;
+create policy "Allow anonymous inserts"
   on public.submissions
   for insert
   to anon
   with check (true);
 
 -- Allow authenticated users to read all submissions (dashboard)
-create policy if not exists "Allow authenticated reads"
+drop policy if exists "Allow authenticated reads" on public.submissions;
+create policy "Allow authenticated reads"
   on public.submissions
   for select
   to authenticated
   using (true);
 
 -- Allow authenticated users to update submissions
-create policy if not exists "Allow authenticated updates"
+drop policy if exists "Allow authenticated updates" on public.submissions;
+create policy "Allow authenticated updates"
   on public.submissions
   for update
   to authenticated
