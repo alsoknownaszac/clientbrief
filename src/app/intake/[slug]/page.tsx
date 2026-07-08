@@ -236,8 +236,8 @@ export default function AgencyIntakePage() {
           </h1>
           <p className="mx-auto max-w-lg text-sm text-muted-foreground leading-relaxed">
             Describe your app idea in plain English. {agency.name}
-            's AI will analyse your brief, clarify anything that's vague, and
-            prepare a complete proposal — no sales calls required.
+            &rsquo;s AI will analyse your brief, clarify anything that&rsquo;s
+            vague, and prepare a complete proposal — no sales calls required.
           </p>
         </div>
 

@@ -276,8 +276,8 @@ export default function SubmissionDetailPage() {
               {error || "Submission not found"}
             </h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              The brief you're looking for doesn't exist or you don't have
-              access to it.
+              The brief you&rsquo;re looking for doesn&rsquo;t exist or you
+              don&rsquo;t have access to it.
             </p>
             <button
               onClick={() => router.push("/dashboard")}
