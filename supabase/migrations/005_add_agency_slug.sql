@@ -31,6 +31,10 @@ WHERE slug IS NULL;
 ALTER TABLE public.agencies
   ALTER COLUMN slug SET NOT NULL;
 
+-- Drop the constraint first so this section is safe to re-run
+ALTER TABLE public.agencies
+  DROP CONSTRAINT IF EXISTS agencies_slug_unique;
+
 ALTER TABLE public.agencies
   ADD CONSTRAINT agencies_slug_unique UNIQUE (slug);
 
