@@ -64,30 +64,32 @@ export function DocumentPreview({
             </svg>
             Download
           </button>
-          <button onClick={onSend} className="btn-primary text-sm">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="22" y1="2" x2="11" y2="13" />
-              <polygon points="22 2 15 22 11 13 2 9 22 2" />
-            </svg>
-            Send to Client
-          </button>
+          {onSend && (
+            <button onClick={onSend} className="btn-primary text-sm">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="22" y1="2" x2="11" y2="13" />
+                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+              </svg>
+              Send to Client
+            </button>
+          )}
         </div>
       </div>
 
       {/* Content preview */}
-      <div className="rounded-xl border border-border-subtle bg-white/[0.02] p-4">
-        <pre className="whitespace-pre-wrap font-sans text-sm text-muted-foreground leading-relaxed">
+      <div className="rounded-xl border border-border-subtle bg-white/[0.02] p-4 overflow-auto">
+        <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap break-words font-sans">
           {content}
-        </pre>
+        </div>
       </div>
     </div>
   );
