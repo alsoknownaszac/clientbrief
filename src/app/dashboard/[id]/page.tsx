@@ -23,6 +23,10 @@ export default function SubmissionDetailPage() {
   const [deliverError, setDeliverError] = useState<string | null>(null);
   const [portalUrl, setPortalUrl] = useState<string | null>(null);
   const [portalCopied, setPortalCopied] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [feedbackText, setFeedbackText] = useState("");
+  const [sendingFeedback, setSendingFeedback] = useState(false);
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
 
   const fetchSubmission = useCallback(async () => {
     if (!id) return;
@@ -1089,36 +1093,10 @@ export default function SubmissionDetailPage() {
                 )}
                 <button
                   className="btn-ghost w-full text-sm justify-start text-amber-400 hover:text-amber-300"
-                  onClick={async () => {
-                    if (!submission) return;
-                    const feedback =
-                      prompt(
-                        "What needs to be changed? Enter your feedback:",
-                      ) ?? "";
-                    if (!feedback.trim()) return;
-
-                    try {
-                      const res = await fetch("/api/contract", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          submission_id: submission.id,
-                          action: "request_changes",
-                          feedback: feedback.trim(),
-                        }),
-                      });
-                      const data = await res.json();
-                      if (res.ok && data.success) {
-                        await fetchSubmission();
-                      } else {
-                        alert(
-                          data.error ||
-                            "Failed to request changes. Please try again.",
-                        );
-                      }
-                    } catch {
-                      alert("Network error. Please try again.");
-                    }
+                  onClick={() => {
+                    setFeedbackText("");
+                    setFeedbackError(null);
+                    setShowFeedbackModal(true);
                   }}
                 >
                   <svg
@@ -1185,6 +1163,132 @@ export default function SubmissionDetailPage() {
             {/* )} */}
           </div>
         </div>
+        {/* ── Custom Feedback Modal ─────────────────────────── */}
+        {showFeedbackModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => {
+                if (!sendingFeedback) setShowFeedbackModal(false);
+              }}
+            />
+            {/* Modal */}
+            <div className="relative z-10 mx-4 w-full max-w-lg rounded-2xl border border-border-subtle bg-background p-6 shadow-2xl">
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-foreground">
+                  Request Changes
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Describe what needs to be adjusted. The submission will be
+                  sent back to pending review status.
+                </p>
+              </div>
+
+              {feedbackError && (
+                <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
+                  {feedbackError}
+                </div>
+              )}
+
+              <textarea
+                value={feedbackText}
+                onChange={(e) => setFeedbackText(e.target.value)}
+                placeholder="e.g., The timeline needs to be extended to 12 weeks, or the budget estimate is too low..."
+                rows={4}
+                className="input-field min-h-[100px] resize-y mb-4"
+                autoFocus
+                disabled={sendingFeedback}
+              />
+
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  onClick={() => setShowFeedbackModal(false)}
+                  disabled={sendingFeedback}
+                  className="btn-ghost text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!submission || !feedbackText.trim()) return;
+                    setSendingFeedback(true);
+                    setFeedbackError(null);
+                    try {
+                      const res = await fetch("/api/contract", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          submission_id: submission.id,
+                          action: "request_changes",
+                          feedback: feedbackText.trim(),
+                        }),
+                      });
+                      const data = await res.json();
+                      if (res.ok && data.success) {
+                        setShowFeedbackModal(false);
+                        await fetchSubmission();
+                      } else {
+                        setFeedbackError(
+                          data.error ||
+                            "Failed to request changes. Please try again.",
+                        );
+                      }
+                    } catch {
+                      setFeedbackError("Network error. Please try again.");
+                    } finally {
+                      setSendingFeedback(false);
+                    }
+                  }}
+                  disabled={!feedbackText.trim() || sendingFeedback}
+                  className="btn-primary text-sm"
+                >
+                  {sendingFeedback ? (
+                    <>
+                      <svg
+                        className="h-4 w-4 animate-spin"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        />
+                      </svg>
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                      Send Feedback
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
