@@ -20,6 +20,14 @@ const statusConfig: Record<
     label: "Pending Review",
     dotClass: "status-dot-amber",
   },
+  contract_sent: {
+    label: "Contract Sent",
+    dotClass: "status-dot-amber",
+  },
+  contract_signed: {
+    label: "Contract Signed",
+    dotClass: "status-dot-indigo",
+  },
   delivered: {
     label: "Delivered",
     dotClass: "status-dot-emerald",

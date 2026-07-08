@@ -1,22 +1,108 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface ClarifyStepProps {
   questions: string[];
+  submissionId?: string | null;
   onComplete?: (answers: string[]) => void;
   onBack?: () => void;
 }
 
+const STORAGE_PREFIX = "clarify-";
+
+function makeStorageKey(submissionId?: string | null): string | null {
+  if (!submissionId) return null;
+  return `${STORAGE_PREFIX}${submissionId}`;
+}
+
 export function ClarifyStep({
   questions,
+  submissionId,
   onComplete,
   onBack,
 }: ClarifyStepProps) {
+  const storageKey = makeStorageKey(submissionId);
+
+  // Always start with empty/zero — restore from sessionStorage in useEffect
+  // to avoid hydration mismatch (server has no sessionStorage).
   const [answers, setAnswers] = useState<string[]>(
     new Array(questions.length).fill(""),
   );
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  // Track whether we've restored from storage yet
+  const hasRestored = useRef(false);
+
+  // Restore saved state from sessionStorage after hydration
+  useEffect(() => {
+    if (!storageKey || hasRestored.current) return;
+    hasRestored.current = true;
+
+    try {
+      const saved = sessionStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved) as {
+          answers: string[];
+          currentIndex: number;
+          questionCount: number;
+        };
+        // Only restore if the question count matches (same question set)
+        if (
+          parsed.questionCount === questions.length &&
+          Array.isArray(parsed.answers)
+        ) {
+          setAnswers(parsed.answers);
+          setCurrentIndex(
+            Math.min(parsed.currentIndex ?? 0, questions.length - 1),
+          );
+        }
+      }
+    } catch {
+      // Ignore corrupt storage
+    }
+  }, [storageKey, questions.length]);
+
+  // Save answers + currentIndex to sessionStorage on every change
+  // (only after initial restore)
+  const isInitialised = useRef(false);
+  useEffect(() => {
+    if (!storageKey || !isInitialised.current) {
+      isInitialised.current = true;
+      return;
+    }
+    try {
+      sessionStorage.setItem(
+        storageKey,
+        JSON.stringify({
+          answers,
+          currentIndex,
+          questionCount: questions.length,
+        }),
+      );
+    } catch {
+      // sessionStorage might be full (unlikely)
+    }
+  }, [answers, currentIndex, questions.length, storageKey]);
+
+  // When questions change to a different set, reset answers
+  useEffect(() => {
+    if (!storageKey) return;
+    try {
+      const saved = sessionStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved) as { questionCount: number };
+        if (parsed.questionCount !== questions.length) {
+          setAnswers(new Array(questions.length).fill(""));
+          setCurrentIndex(0);
+          hasRestored.current = true; // prevent re-restore of stale data
+        }
+      }
+    } catch {
+      // Ignore
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [questions.length, storageKey]);
 
   const updateAnswer = (index: number, value: string) => {
     const updated = [...answers];
@@ -37,6 +123,10 @@ export function ClarifyStep({
 
   const handleBack = () => {
     if (currentIndex === 0) {
+      // Clear saved answers when going back to brief
+      if (storageKey) {
+        sessionStorage.removeItem(storageKey);
+      }
       onBack?.();
     } else {
       setCurrentIndex((prev) => prev - 1);

@@ -1,60 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ReviewCard } from "@/components/ReviewCard";
+import { createBrowserClient } from "@supabase/ssr";
 import type { Submission, SubmissionStatus } from "@/lib/types";
-
-// Sample data for demonstration
-const SAMPLE_SUBMISSIONS: Submission[] = [
-  {
-    id: "1",
-    client_name: "Sarah Johnson",
-    client_email: "sarah@acme.com",
-    project_type: "Website Redesign",
-    raw_brief:
-      "We need a complete website redesign for our SaaS platform. The current site feels outdated and doesn't convert well. We want a modern, clean design with strong CTAs and improved information architecture. Target audience is mid-market B2B tech companies.",
-    status: "pending_review",
-    created_at: "2026-06-28T10:30:00Z",
-    updated_at: "2026-06-28T10:30:00Z",
-  },
-  {
-    id: "2",
-    client_name: "Marcus Chen",
-    client_email: "marcus@designlab.co",
-    project_type: "Brand Identity",
-    raw_brief:
-      "Looking for a brand identity package including logo, color palette, typography system, and brand guidelines. We're a boutique design consultancy targeting high-end clients.",
-    status: "analysed",
-    created_at: "2026-06-27T14:00:00Z",
-    updated_at: "2026-06-27T14:00:00Z",
-  },
-  {
-    id: "3",
-    client_name: "Emily Rodriguez",
-    client_email: "emily@greenleaf.org",
-    project_type: "Landing Page + Email",
-    raw_brief:
-      "Need a donation landing page and email campaign for our annual fundraising drive. Should be mobile-first and integrate with Stripe.",
-    status: "ready_for_analysis",
-    created_at: "2026-06-26T09:15:00Z",
-    updated_at: "2026-06-26T09:15:00Z",
-  },
-  {
-    id: "4",
-    client_name: "Alex Thompson",
-    client_email: "alex@thompson.dev",
-    project_type: "Mobile App UI/UX",
-    raw_brief:
-      "Mobile app UI/UX design for a habit tracking app. Need wireframes, high-fidelity mockups, and a prototype.",
-    status: "delivered",
-    created_at: "2026-06-25T16:45:00Z",
-    updated_at: "2026-06-25T16:45:00Z",
-  },
-];
 
 const STATUS_TABS: { label: string; value: SubmissionStatus | "all" }[] = [
   { label: "All", value: "all" },
   { label: "Pending Review", value: "pending_review" },
+  { label: "Contract Sent", value: "contract_sent" },
+  { label: "Contract Signed", value: "contract_signed" },
   { label: "Analysed", value: "analysed" },
   { label: "Needs Clarification", value: "needs_clarification" },
   { label: "Ready for Analysis", value: "ready_for_analysis" },
@@ -63,7 +18,54 @@ const STATUS_TABS: { label: string; value: SubmissionStatus | "all" }[] = [
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<SubmissionStatus | "all">("all");
-  const [submissions] = useState(SAMPLE_SUBMISSIONS);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [agencySlug, setAgencySlug] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const fetchSubmissions = useCallback(async () => {
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    );
+
+    // Get current user's agency
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (session?.user) {
+      const { data: agency } = await supabase
+        .from("agencies")
+        .select("id, slug")
+        .eq("user_id", session.user.id)
+        .single();
+
+      if (agency) {
+        setAgencySlug((agency as { slug: string }).slug);
+
+        const { data, error } = await supabase
+          .from("submissions")
+          .select("*")
+          .eq("agency_id", agency.id)
+          .order("created_at", { ascending: false });
+
+        if (!error && data) {
+          setSubmissions(data as Submission[]);
+        }
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Fallback: no agency found, show empty
+    setSubmissions([]);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchSubmissions();
+  }, [fetchSubmissions]);
 
   const filtered =
     activeTab === "all"
@@ -75,13 +77,38 @@ export default function DashboardPage() {
   };
 
   const handleApprove = (id: string) => {
-    console.log("Approve:", id);
-    alert(`Submission ${id} approved! (Demo)`);
+    window.location.href = `/dashboard/${id}`;
   };
 
   const handleRequestChanges = (id: string) => {
-    console.log("Request changes:", id);
-    alert(`Changes requested for submission ${id}. (Demo)`);
+    window.location.href = `/dashboard/${id}`;
+  };
+
+  const handleCopyLink = () => {
+    if (!agencySlug) return;
+    const intakeUrl = `${window.location.origin}/intake/${agencySlug}`;
+    navigator.clipboard.writeText(intakeUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const intakeUrl = agencySlug
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}/intake/${agencySlug}`
+    : "";
+
+  // Stats
+  const stats = {
+    total: submissions.length,
+    pendingReview: submissions.filter((s) => s.status === "pending_review")
+      .length,
+    analysed: submissions.filter(
+      (s) =>
+        s.status === "analysed" ||
+        s.status === "contract_sent" ||
+        s.status === "contract_signed",
+    ).length,
+    delivered: submissions.filter((s) => s.status === "delivered").length,
   };
 
   return (
@@ -101,59 +128,136 @@ export default function DashboardPage() {
                 Review and manage client briefs.
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 rounded-xl border border-border-subtle bg-white/[0.02] px-4 py-2">
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-muted-foreground"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <polyline points="12 6 12 12 16 14" />
-                </svg>
-                <span className="text-sm text-muted-foreground">
-                  Last updated: just now
-                </span>
+          </div>
+
+          {/* Intake link card */}
+          {agencySlug && (
+            <div className="mt-6 rounded-xl border border-indigo-500/20 bg-indigo-500/[0.03] p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-foreground">
+                    Your Intake Link
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Share this link with clients so they can submit briefs
+                    directly to your agency.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={intakeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-lg border border-border-subtle bg-white/[0.05] px-3 py-1.5 text-xs text-indigo-400 hover:text-indigo-300 hover:border-indigo-500/30 truncate max-w-[280px] sm:max-w-sm transition-colors"
+                    title="Open your intake form in a new tab"
+                  >
+                    {intakeUrl}
+                  </a>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleCopyLink();
+                    }}
+                    className="btn-secondary text-xs shrink-0"
+                  >
+                    {copied ? (
+                      <>
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="text-emerald-400"
+                        >
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        Copied
+                      </>
+                    ) : (
+                      <>
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <rect
+                            x="9"
+                            y="9"
+                            width="13"
+                            height="13"
+                            rx="2"
+                            ry="2"
+                          />
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                        </svg>
+                        Copy
+                      </>
+                    )}
+                  </button>
+                  <a
+                    href={intakeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-ghost text-xs shrink-0"
+                    title="Preview your intake form"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                      <polyline points="15 3 21 3 21 9" />
+                      <line x1="10" y1="14" x2="21" y2="3" />
+                    </svg>
+                    View
+                  </a>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Stats row */}
           <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
             {[
               {
                 label: "Total Briefs",
-                value: submissions.length,
+                value: stats.total,
                 color: "text-foreground",
               },
               {
                 label: "Pending Review",
-                value: submissions.filter((s) => s.status === "pending_review")
-                  .length,
+                value: stats.pendingReview,
                 color: "text-amber-400",
               },
               {
-                label: "Analysed",
-                value: submissions.filter((s) => s.status === "analysed")
-                  .length,
+                label: "In Progress",
+                value: stats.analysed,
                 color: "text-indigo-400",
               },
               {
                 label: "Delivered",
-                value: submissions.filter((s) => s.status === "delivered")
-                  .length,
+                value: stats.delivered,
                 color: "text-emerald-400",
               },
             ].map((stat) => (
               <div key={stat.label} className="card text-center">
                 <p className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-                  {stat.value}
+                  {loading ? "—" : stat.value}
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {stat.label}
@@ -181,7 +285,32 @@ export default function DashboardPage() {
         </div>
 
         {/* Submissions list */}
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="card flex flex-col items-center justify-center py-16 text-center">
+            <svg
+              className="h-8 w-8 animate-spin text-muted-foreground"
+              viewBox="0 0 24 24"
+              fill="none"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+              />
+            </svg>
+            <p className="mt-4 text-sm text-muted-foreground">
+              Loading briefs...
+            </p>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="card flex flex-col items-center justify-center py-16 text-center">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/[0.03]">
               <svg
@@ -203,9 +332,24 @@ export default function DashboardPage() {
               No briefs found
             </h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              {activeTab === "all"
-                ? "No client briefs have been submitted yet."
-                : `No briefs with status "${activeTab}" found.`}
+              {activeTab === "all" ? (
+                agencySlug ? (
+                  <span>
+                    No client briefs have been submitted yet.{" "}
+                    <button
+                      onClick={handleCopyLink}
+                      className="text-indigo-400 hover:text-indigo-300 underline underline-offset-2"
+                    >
+                      {copied ? "Link copied!" : "Copy your intake link"}
+                    </button>{" "}
+                    to share with clients.
+                  </span>
+                ) : (
+                  "No client briefs have been submitted yet. Share your intake form link with clients to get started."
+                )
+              ) : (
+                `No briefs with status "${activeTab}" found.`
+              )}
             </p>
           </div>
         ) : (

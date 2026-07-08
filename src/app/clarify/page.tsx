@@ -26,11 +26,25 @@ function ClarifyContent() {
   const handleComplete = async (answers: string[]) => {
     // Send the clarification answers back to the API for re-validation
     try {
+      // Try to get parsed_data from sessionStorage (stored by submit flow)
+      let parsedData = null;
+      if (submissionId) {
+        try {
+          const stored = sessionStorage.getItem(`parsed-${submissionId}`);
+          if (stored) {
+            parsedData = JSON.parse(stored);
+          }
+        } catch {
+          // Ignore
+        }
+      }
+
       const res = await fetch("/api/clarify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           submission_id: submissionId,
+          parsed_data: parsedData,
           clarifications: answers,
         }),
       });
@@ -38,6 +52,11 @@ function ClarifyContent() {
       const result = await res.json();
 
       if (res.ok && result.success) {
+        // Clear saved answers and parsed data from sessionStorage
+        if (submissionId) {
+          sessionStorage.removeItem(`clarify-${submissionId}`);
+          sessionStorage.removeItem(`parsed-${submissionId}`);
+        }
         if (result.actionable) {
           alert(
             "Thanks for the additional details! Your brief is now ready for analysis.",
@@ -89,6 +108,7 @@ function ClarifyContent() {
         {/* Clarification step component */}
         <ClarifyStep
           questions={questions}
+          submissionId={submissionId}
           onComplete={handleComplete}
           onBack={handleBack}
         />

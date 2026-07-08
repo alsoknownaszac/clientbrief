@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getQwenClient, MODELS } from "@/lib/qwen";
 import { ANALYSE_PROMPT } from "@/lib/prompts";
-import { getSupabaseClient } from "@/lib/supabase";
+import { getSupabaseAdminClient } from "@/lib/supabase";
 
 export async function POST(req: NextRequest) {
   try {
@@ -50,13 +50,21 @@ ${clarifications ? `Client Clarifications: ${JSON.stringify(clarifications)}` : 
     }
 
     if (submission_id) {
-      try {
-        const supabase = getSupabaseClient();
-        await (supabase.from("submissions") as any)
-          .update({ analysis, status: "analysed" })
-          .eq("id", submission_id);
-      } catch {
-        // Supabase not configured
+      const supabase = getSupabaseAdminClient();
+      const { error: dbError } = await (supabase.from("submissions") as any)
+        .update({ analysis, status: "analysed" })
+        .eq("id", submission_id);
+
+      if (dbError) {
+        console.error("Failed to update submission with analysis:", dbError);
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Analysis generated but failed to save to database.",
+            detail: dbError.message,
+          },
+          { status: 500 },
+        );
       }
     }
 

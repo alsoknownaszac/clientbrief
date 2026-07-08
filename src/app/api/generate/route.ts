@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getQwenClient, MODELS } from "@/lib/qwen";
 import { SCOPE_PROMPT, INVOICE_PROMPT } from "@/lib/prompts";
-import { getSupabaseClient } from "@/lib/supabase";
+import { getSupabaseAdminClient } from "@/lib/supabase";
 
 export async function POST(req: NextRequest) {
   try {
@@ -54,13 +54,21 @@ Budget Range: $${analysis.estimated_budget_usd?.low ?? "?"}–$${analysis.estima
     const invoice_draft = invoiceRes.choices[0]?.message?.content ?? "";
 
     if (submission_id) {
-      try {
-        const supabase = getSupabaseClient();
-        await (supabase.from("submissions") as any)
-          .update({ scope_document, invoice_draft, status: "pending_review" })
-          .eq("id", submission_id);
-      } catch {
-        // Supabase not configured
+      const supabase = getSupabaseAdminClient();
+      const { error: dbError } = await (supabase.from("submissions") as any)
+        .update({ scope_document, invoice_draft, status: "pending_review" })
+        .eq("id", submission_id);
+
+      if (dbError) {
+        console.error("Failed to update submission with documents:", dbError);
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Documents generated but failed to save to database.",
+            detail: dbError.message,
+          },
+          { status: 500 },
+        );
       }
     }
 
