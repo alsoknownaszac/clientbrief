@@ -1087,7 +1087,40 @@ export default function SubmissionDetailPage() {
                     Preview as Client
                   </button>
                 )}
-                <button className="btn-ghost w-full text-sm justify-start text-amber-400 hover:text-amber-300">
+                <button
+                  className="btn-ghost w-full text-sm justify-start text-amber-400 hover:text-amber-300"
+                  onClick={async () => {
+                    if (!submission) return;
+                    const feedback =
+                      prompt(
+                        "What needs to be changed? Enter your feedback:",
+                      ) ?? "";
+                    if (!feedback.trim()) return;
+
+                    try {
+                      const res = await fetch("/api/contract", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          submission_id: submission.id,
+                          action: "request_changes",
+                          feedback: feedback.trim(),
+                        }),
+                      });
+                      const data = await res.json();
+                      if (res.ok && data.success) {
+                        await fetchSubmission();
+                      } else {
+                        alert(
+                          data.error ||
+                            "Failed to request changes. Please try again.",
+                        );
+                      }
+                    } catch {
+                      alert("Network error. Please try again.");
+                    }
+                  }}
+                >
                   <svg
                     width="16"
                     height="16"
