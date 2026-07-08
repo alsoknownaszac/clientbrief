@@ -4,16 +4,9 @@ import { StatusBadge } from "./StatusBadge";
 interface ReviewCardProps {
   submission: Submission;
   onViewDetails?: (id: string) => void;
-  onApprove?: (id: string) => void;
-  onRequestChanges?: (id: string) => void;
 }
 
-export function ReviewCard({
-  submission,
-  onViewDetails,
-  onApprove,
-  onRequestChanges,
-}: ReviewCardProps) {
+export function ReviewCard({ submission, onViewDetails }: ReviewCardProps) {
   const date = new Date(submission.created_at).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -95,26 +88,10 @@ export function ReviewCard({
         <div className="flex items-center gap-2 sm:flex-col sm:items-stretch">
           <button
             onClick={() => onViewDetails?.(submission.id)}
-            className="btn-secondary text-sm whitespace-nowrap"
+            className="btn-primary text-sm whitespace-nowrap"
           >
             View Details
           </button>
-          {submission.status === "pending_review" && (
-            <div className="flex gap-2 sm:flex-col">
-              <button
-                onClick={() => onApprove?.(submission.id)}
-                className="btn-primary text-sm whitespace-nowrap"
-              >
-                Approve
-              </button>
-              <button
-                onClick={() => onRequestChanges?.(submission.id)}
-                className="btn-ghost text-sm whitespace-nowrap text-amber-400 hover:text-amber-300"
-              >
-                Request Changes
-              </button>
-            </div>
-          )}
         </div>
       </div>
     </div>

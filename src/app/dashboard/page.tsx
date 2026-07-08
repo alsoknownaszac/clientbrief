@@ -76,14 +76,6 @@ export default function DashboardPage() {
     window.location.href = `/dashboard/${id}`;
   };
 
-  const handleApprove = (id: string) => {
-    window.location.href = `/dashboard/${id}`;
-  };
-
-  const handleRequestChanges = (id: string) => {
-    window.location.href = `/dashboard/${id}`;
-  };
-
   const handleCopyLink = () => {
     if (!agencySlug) return;
     const intakeUrl = `${window.location.origin}/intake/${agencySlug}`;
@@ -359,8 +351,6 @@ export default function DashboardPage() {
                 key={submission.id}
                 submission={submission}
                 onViewDetails={handleViewDetails}
-                onApprove={handleApprove}
-                onRequestChanges={handleRequestChanges}
               />
             ))}
           </div>
