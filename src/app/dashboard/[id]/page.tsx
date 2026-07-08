@@ -21,6 +21,8 @@ export default function SubmissionDetailPage() {
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [delivering, setDelivering] = useState(false);
   const [deliverError, setDeliverError] = useState<string | null>(null);
+  const [portalUrl, setPortalUrl] = useState<string | null>(null);
+  const [portalCopied, setPortalCopied] = useState(false);
 
   const fetchSubmission = useCallback(async () => {
     if (!id) return;
@@ -158,6 +160,9 @@ export default function SubmissionDetailPage() {
         setDelivering(false);
         return;
       }
+
+      // Show the portal URL to the agency
+      setPortalUrl(result.portal_url ?? null);
 
       // Refresh the submission to get updated status
       await fetchSubmission();
@@ -553,6 +558,121 @@ export default function SubmissionDetailPage() {
               )}
             </div>
           </div>
+
+          {/* Deliver success — Show portal link */}
+          {portalUrl && (
+            <div className="mt-4 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.05] p-5">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10">
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-emerald-400"
+                  >
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                    <polyline points="22 4 12 14.01 9 11.01" />
+                  </svg>
+                </div>
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-emerald-400">
+                      Proposal delivered — Share this link with the client
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      The client can view the proposal, accept it, or request
+                      changes. Copy the link below and send it to them via your
+                      preferred channel.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 rounded-lg border border-border-subtle bg-white/[0.05] px-3 py-2 text-xs text-foreground font-mono truncate">
+                      {portalUrl}
+                    </code>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(portalUrl).then(() => {
+                          setPortalCopied(true);
+                          setTimeout(() => setPortalCopied(false), 2000);
+                        });
+                      }}
+                      className="btn-secondary text-xs shrink-0"
+                    >
+                      {portalCopied ? (
+                        <>
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="text-emerald-400"
+                          >
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                          Copied
+                        </>
+                      ) : (
+                        <>
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <rect
+                              x="9"
+                              y="9"
+                              width="13"
+                              height="13"
+                              rx="2"
+                              ry="2"
+                            />
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                          </svg>
+                          Copy
+                        </>
+                      )}
+                    </button>
+                    <a
+                      href={portalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-primary text-xs shrink-0"
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                        <polyline points="15 3 21 3 21 9" />
+                        <line x1="10" y1="14" x2="21" y2="3" />
+                      </svg>
+                      Preview
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Action errors */}
           {analyseError && (

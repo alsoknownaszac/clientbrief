@@ -1,11 +1,13 @@
+// =============================================================================
+// Deliver route — generates a portal token for client access.
+// Email sending (Resend) is disabled for MVP v1.0. The agency gets a shareable
+// portal link to send to the client manually.
+// =============================================================================
+
 import { NextRequest, NextResponse } from "next/server";
-import { getQwenClient, MODELS } from "@/lib/qwen";
-import { EMAIL_PROMPT } from "@/lib/prompts";
 import { getSupabaseAdminClient } from "@/lib/supabase";
-import { Resend } from "resend";
 import { randomUUID } from "crypto";
 
-const resendApiKey = process.env.RESEND_API_KEY;
 const APP_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 export async function POST(req: NextRequest) {
@@ -67,96 +69,7 @@ export async function POST(req: NextRequest) {
     }
 
     const portalUrl = `${APP_URL}/proposal/${portalToken}`;
-    const parsedData = sub.parsed_data as Record<string, unknown> | undefined;
-    const projectType = (parsedData?.project_type as string) ?? "Project";
     const clientName = sub.client_name as string;
-    const clientEmail = sub.client_email as string;
-
-    // ── Generate email body with AI ────────────────────
-    let aiBody = `Hi ${clientName},\n\nThank you for submitting your project brief! We've reviewed it and prepared a complete proposal for your ${projectType}.\n\nYou can view the full proposal, scope of work, and invoice online here:\n${portalUrl}\n\nWe're excited about this project and look forward to working with you.`;
-
-    try {
-      const qwen = getQwenClient();
-      const emailCompletion = await qwen.chat.completions.create({
-        model: MODELS.fast,
-        messages: [
-          { role: "system", content: EMAIL_PROMPT },
-          {
-            role: "user",
-            content: `Client: ${clientName}, Project: ${projectType}, Portal URL: ${portalUrl}`,
-          },
-        ],
-        temperature: 0.5,
-        max_tokens: 500,
-      });
-
-      const generatedBody = emailCompletion.choices[0]?.message?.content ?? "";
-      if (generatedBody.trim()) {
-        aiBody = generatedBody;
-      }
-    } catch (aiErr) {
-      console.error("AI email generation failed, using fallback:", aiErr);
-      // Use the fallback email body — not a critical failure
-    }
-
-    // Append portal link footer
-    const emailBody = `${aiBody}
-
----
-
-📋 **View your proposal online:** ${portalUrl}
-
-Review the scope of work, timeline, and budget — and accept or request changes directly from the portal.`;
-
-    // ── Send email via Resend ──────────────────────────
-    let emailSent = false;
-    let emailError: string | null = null;
-
-    if (resendApiKey && clientEmail) {
-      try {
-        const resend = new Resend(resendApiKey);
-
-        const attachments: { filename: string; content: string }[] = [];
-
-        if (sub.scope_document) {
-          attachments.push({
-            filename: "scope-of-work.md",
-            content: Buffer.from(sub.scope_document as string).toString(
-              "base64",
-            ),
-          });
-        }
-
-        if (sub.invoice_draft) {
-          attachments.push({
-            filename: "invoice-draft.md",
-            content: Buffer.from(sub.invoice_draft as string).toString(
-              "base64",
-            ),
-          });
-        }
-
-        await resend.emails.send({
-          from: "ClientBrief Autopilot <onboarding@clientbrief.app>",
-          to: clientEmail,
-          subject: `Your Project Proposal — ${projectType}`,
-          text: emailBody,
-          ...(attachments.length > 0 ? { attachments } : {}),
-        });
-
-        emailSent = true;
-      } catch (sendErr) {
-        const msg =
-          sendErr instanceof Error ? sendErr.message : "Unknown email error";
-        console.error("Resend email delivery failed:", msg);
-        emailError = msg;
-        // Don't fail the whole request — the portal link still works
-      }
-    } else if (!resendApiKey) {
-      emailError = "RESEND_API_KEY not configured — email not sent";
-    } else if (!clientEmail) {
-      emailError = "Client email missing — email not sent";
-    }
 
     // ── Update submission status ───────────────────────
     await (supabase.from("submissions") as any)
@@ -169,11 +82,12 @@ Review the scope of work, timeline, and budget — and accept or request changes
 
     return NextResponse.json({
       success: true,
-      to: clientEmail,
-      subject: `Your Project Proposal — ${projectType}`,
+      client_name: clientName,
       portal_url: portalUrl,
-      email_sent: emailSent,
-      ...(emailError ? { email_warning: emailError } : {}),
+      portal_token: portalToken,
+      email_sent: false,
+      email_warning:
+        "Email sending is disabled for this version. Share the portal URL with the client directly.",
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
@@ -184,3 +98,18 @@ Review the scope of work, timeline, and budget — and accept or request changes
     );
   }
 }
+
+// =============================================================================
+// EMAIL SENDING — DISABLED FOR MVP v1.0
+// =============================================================================
+// The original Resend-based email implementation is preserved below.
+// To re-enable, uncomment and add RESEND_API_KEY to .env.local.
+// =============================================================================
+//
+// import { getQwenClient, MODELS } from "@/lib/qwen";
+// import { EMAIL_PROMPT } from "@/lib/prompts";
+// import { Resend } from "resend";
+//
+// const resendApiKey = process.env.RESEND_API_KEY;
+//
+// ... AI email generation + Resend send logic ...

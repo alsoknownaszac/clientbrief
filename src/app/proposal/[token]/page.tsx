@@ -239,36 +239,130 @@ export default function ProposalPortalPage() {
 
         {/* Already signed notice */}
         {isAlreadySigned && (
-          <div className="mb-8 rounded-xl border border-indigo-500/20 bg-indigo-500/[0.05] p-5 text-center">
-            <svg
-              className="mx-auto mb-2 h-8 w-8 text-indigo-400"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            <p className="text-sm text-indigo-400 font-medium">
-              Proposal accepted — thank you! The team will reach out to schedule
-              the kickoff shortly.
-            </p>
-            {submission.contract_signed_at && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                Accepted on{" "}
-                {new Date(submission.contract_signed_at).toLocaleDateString(
-                  "en-US",
-                  {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  },
-                )}
+          <div className="mb-8 space-y-6">
+            <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/[0.05] p-5 text-center">
+              <svg
+                className="mx-auto mb-2 h-8 w-8 text-indigo-400"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              <p className="text-sm text-indigo-400 font-medium">
+                Proposal accepted — thank you! The team will reach out to
+                schedule the kickoff shortly.
               </p>
+              {submission.contract_signed_at && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Accepted on{" "}
+                  {new Date(submission.contract_signed_at).toLocaleDateString(
+                    "en-US",
+                    {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    },
+                  )}
+                </p>
+              )}
+            </div>
+
+            {/* ── Stripe deposit payment — disabled for MVP v1.0 ── */}
+            {!submission.deposit_paid && (
+              <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.02] p-5 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                      <line x1="1" y1="10" x2="23" y2="10" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-amber-400">
+                      Deposit Payment
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Stripe payments are coming in v2.0. For now, the agency
+                      will handle payment off-platform.
+                    </p>
+                  </div>
+                </div>
+                {submission.analysis && (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-lg border border-border-subtle bg-white/[0.02] px-4 py-3">
+                      <p className="text-xs text-muted-foreground">
+                        Deposit Amount
+                      </p>
+                      <p className="text-lg font-semibold text-foreground">
+                        $
+                        {(
+                          submission.deposit_amount ||
+                          Math.round(
+                            (submission.analysis.estimated_budget_usd.low ||
+                              0) * 0.3,
+                          ) ||
+                          "—"
+                        ).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-border-subtle bg-white/[0.02] px-4 py-3">
+                      <p className="text-xs text-muted-foreground">
+                        Remaining After Deposit
+                      </p>
+                      <p className="text-lg font-semibold text-foreground">
+                        $
+                        {(
+                          (submission.analysis.estimated_budget_usd.low || 0) -
+                          (submission.deposit_amount ||
+                            Math.round(
+                              (submission.analysis.estimated_budget_usd.low ||
+                                0) * 0.3,
+                            ))
+                        ).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground text-center">
+                  ⏳ Online deposit payment will be available in a future
+                  update. The agency will contact you to arrange payment.
+                </p>
+              </div>
+            )}
+
+            {submission.deposit_paid && (
+              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.05] p-5 text-center">
+                <svg
+                  className="mx-auto mb-2 h-8 w-8 text-emerald-400"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                <p className="text-sm text-emerald-400 font-medium">
+                  Proposal accepted and deposit paid — thank you! The team will
+                  reach out to schedule the kickoff shortly.
+                </p>
+              </div>
             )}
           </div>
         )}
