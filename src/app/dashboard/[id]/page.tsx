@@ -745,6 +745,41 @@ export default function SubmissionDetailPage() {
           )}
         </div>
 
+        {/* Generated Documents — full width, above the content grid */}
+        {(submission.scope_document || submission.invoice_draft) && (
+          <div className="mb-8">
+            <h2 className="heading-md text-foreground mb-4">
+              Generated Documents
+            </h2>
+            <div className="grid gap-6 lg:grid-cols-2">
+              {submission.scope_document && (
+                <DocumentPreview
+                  title="Scope of Work"
+                  content={submission.scope_document}
+                  onDownload={() =>
+                    handleDownloadDocument(
+                      "Scope of Work",
+                      submission.scope_document!,
+                    )
+                  }
+                />
+              )}
+              {submission.invoice_draft && (
+                <DocumentPreview
+                  title="Invoice Draft"
+                  content={submission.invoice_draft}
+                  onDownload={() =>
+                    handleDownloadDocument(
+                      "Invoice Draft",
+                      submission.invoice_draft!,
+                    )
+                  }
+                />
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Content grid */}
         <div className="grid gap-8 lg:grid-cols-3">
           {/* Main content */}
@@ -1033,35 +1068,6 @@ export default function SubmissionDetailPage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Generated documents */}
-            {submission.scope_document && (
-              <DocumentPreview
-                title="Scope of Work"
-                content={submission.scope_document}
-                onDownload={() =>
-                  handleDownloadDocument(
-                    "Scope of Work",
-                    submission.scope_document!,
-                  )
-                }
-                onSend={handleDeliver}
-              />
-            )}
-
-            {submission.invoice_draft && (
-              <DocumentPreview
-                title="Invoice Draft"
-                content={submission.invoice_draft}
-                onDownload={() =>
-                  handleDownloadDocument(
-                    "Invoice Draft",
-                    submission.invoice_draft!,
-                  )
-                }
-                onSend={handleDeliver}
-              />
-            )}
-
             {/* Quick actions */}
             <div className="card space-y-3">
               <h3 className="text-sm font-semibold text-foreground">
@@ -1205,24 +1211,6 @@ export default function SubmissionDetailPage() {
                 </div>
               </div>
             )}
-            {/* ── Stripe payment status — disabled for MVP v1.0 ── */}
-            {/* {(submission.deposit_paid !== undefined) && ( */}
-            {/*   <div className="card space-y-3"> */}
-            {/*     <h3 className="text-sm font-semibold text-foreground">Payment</h3> */}
-            {/*     <div className="space-y-2 text-sm"> */}
-            {/*       <div className="flex items-center justify-between"> */}
-            {/*         <span className="text-muted-foreground">Deposit</span> */}
-            {/*         <span className="font-medium text-foreground">${submission.deposit_amount?.toLocaleString() ?? "—"}</span> */}
-            {/*       </div> */}
-            {/*       <div className="flex items-center justify-between"> */}
-            {/*         <span className="text-muted-foreground">Paid</span> */}
-            {/*         <span className={`font-medium ${submission.deposit_paid ? "text-emerald-400" : "text-muted-foreground"}`}> */}
-            {/*           {submission.deposit_paid ? "Yes" : "No"} */}
-            {/*         </span> */}
-            {/*       </div> */}
-            {/*     </div> */}
-            {/*   </div> */}
-            {/* )} */}
           </div>
         </div>
       </div>
