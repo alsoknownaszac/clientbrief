@@ -73,10 +73,8 @@ export default function SubmissionDetailPage() {
 
   const handleAnalyse = async () => {
     if (!submission) return;
-
     setAnalysing(true);
     setAnalyseError(null);
-
     try {
       const res = await fetch("/api/analyse", {
         method: "POST",
@@ -87,20 +85,15 @@ export default function SubmissionDetailPage() {
           clarifications: submission.clarification_answers ?? undefined,
         }),
       });
-
       const result = await res.json();
-
       if (!res.ok || !result.success) {
         setAnalyseError(result.error || "Failed to analyse brief.");
         setAnalysing(false);
         return;
       }
-
       await fetchSubmission();
     } catch (err) {
-      setAnalyseError(
-        err instanceof Error ? err.message : "Network error. Please try again.",
-      );
+      setAnalyseError(err instanceof Error ? err.message : "Network error.");
     } finally {
       setAnalysing(false);
     }
@@ -108,10 +101,8 @@ export default function SubmissionDetailPage() {
 
   const handleGenerate = async () => {
     if (!submission) return;
-
     setGenerating(true);
     setGenerateError(null);
-
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
@@ -122,20 +113,15 @@ export default function SubmissionDetailPage() {
           analysis: submission.analysis,
         }),
       });
-
       const result = await res.json();
-
       if (!res.ok || !result.success) {
         setGenerateError(result.error || "Failed to generate documents.");
         setGenerating(false);
         return;
       }
-
       await fetchSubmission();
     } catch (err) {
-      setGenerateError(
-        err instanceof Error ? err.message : "Network error. Please try again.",
-      );
+      setGenerateError(err instanceof Error ? err.message : "Network error.");
     } finally {
       setGenerating(false);
     }
@@ -143,34 +129,24 @@ export default function SubmissionDetailPage() {
 
   const handleDeliver = async () => {
     if (!submission) return;
-
     setDelivering(true);
     setDeliverError(null);
-
     try {
       const res = await fetch("/api/deliver", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ submission_id: submission.id }),
       });
-
       const result = await res.json();
-
       if (!res.ok || !result.success) {
         setDeliverError(result.error || "Failed to deliver proposal.");
         setDelivering(false);
         return;
       }
-
-      // Show the portal URL to the agency
       setPortalUrl(result.portal_url ?? null);
-
-      // Refresh the submission to get updated status
       await fetchSubmission();
     } catch (err) {
-      setDeliverError(
-        err instanceof Error ? err.message : "Network error. Please try again.",
-      );
+      setDeliverError(err instanceof Error ? err.message : "Network error.");
     } finally {
       setDelivering(false);
     }
@@ -178,9 +154,7 @@ export default function SubmissionDetailPage() {
 
   const handleDismissFeedback = async () => {
     if (!submission) return;
-
     setDismissingFeedback(true);
-
     try {
       const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -190,10 +164,9 @@ export default function SubmissionDetailPage() {
         .from("submissions")
         .update({ client_feedback: null, status: "pending_review" })
         .eq("id", submission.id);
-
       await fetchSubmission();
     } catch {
-      // silently fail — the page will just stay as-is
+      // silently fail
     } finally {
       setDismissingFeedback(false);
     }
@@ -211,25 +184,21 @@ export default function SubmissionDetailPage() {
     URL.revokeObjectURL(url);
   };
 
-  // ─── Loading state ────────────────────────────────────────────
   if (loading) {
     return (
       <div className="relative min-h-screen">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -top-40 right-0 h-[600px] w-[600px] rounded-full bg-indigo-500/4 blur-[150px]" />
         </div>
-        <div className="relative mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <div className="animate-pulse space-y-10">
-            {/* Back button skeleton */}
             <div className="h-8 w-40 rounded-lg bg-white/[0.05]" />
-            {/* Header skeleton */}
             <div className="space-y-3">
               <div className="h-9 w-64 rounded-lg bg-white/[0.05]" />
               <div className="h-5 w-96 rounded-lg bg-white/[0.05]" />
             </div>
-            {/* Content skeleton */}
-            <div className="grid gap-8 lg:grid-cols-3">
-              <div className="space-y-6 lg:col-span-2">
+            <div className="grid gap-8 lg:grid-cols-4">
+              <div className="space-y-6 lg:col-span-3">
                 <div className="rounded-xl border border-border-subtle bg-white/[0.02] p-6">
                   <div className="h-6 w-32 rounded bg-white/[0.05]" />
                   <div className="mt-4 h-20 rounded bg-white/[0.03]" />
@@ -256,14 +225,13 @@ export default function SubmissionDetailPage() {
     );
   }
 
-  // ─── Error state ──────────────────────────────────────────────
   if (error || !submission) {
     return (
       <div className="relative min-h-screen">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -top-40 right-0 h-[600px] w-[600px] rounded-full bg-indigo-500/4 blur-[150px]" />
         </div>
-        <div className="relative mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <button
             onClick={() => router.push("/dashboard")}
             className="btn-ghost mb-8 text-sm"
@@ -320,7 +288,6 @@ export default function SubmissionDetailPage() {
     );
   }
 
-  // ─── Normal state ─────────────────────────────────────────────
   const date = new Date(submission.created_at).toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",
@@ -331,13 +298,13 @@ export default function SubmissionDetailPage() {
 
   return (
     <div className="relative min-h-screen">
-      {/* Background gradient */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 right-0 h-[600px] w-[600px] rounded-full bg-indigo-500/4 blur-[150px]" />
         <div className="absolute -bottom-40 left-0 h-[400px] w-[400px] rounded-full bg-indigo-500/3 blur-[100px]" />
       </div>
 
-      <div className="relative mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+      {/* Wider container: max-w-7xl instead of max-w-5xl */}
+      <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         {/* Back button */}
         <button
           onClick={() => router.push("/dashboard")}
@@ -423,114 +390,26 @@ export default function SubmissionDetailPage() {
               </div>
             </div>
 
-            {/* Actions */}
+            {/* Header Actions */}
             <div className="flex items-center gap-2">
-              {/* Step 3: Analyse Brief — visible when ready_for_analysis */}
               {submission.status === "ready_for_analysis" && (
                 <button
                   className="btn-primary text-sm"
                   onClick={handleAnalyse}
                   disabled={analysing}
                 >
-                  {analysing ? (
-                    <>
-                      <svg
-                        className="h-4 w-4 animate-spin"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                        />
-                      </svg>
-                      Analysing...
-                    </>
-                  ) : (
-                    <>
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <polyline points="4 7 12 21 20 7" />
-                        <polyline points="8 7 12 3 16 7" />
-                      </svg>
-                      Analyse Brief
-                    </>
-                  )}
+                  {analysing ? "Analysing..." : "Analyse Brief"}
                 </button>
               )}
-
-              {/* Step 4: Generate Documents — visible when analysed */}
               {submission.status === "analysed" && (
                 <button
                   className="btn-primary text-sm"
                   onClick={handleGenerate}
                   disabled={generating}
                 >
-                  {generating ? (
-                    <>
-                      <svg
-                        className="h-4 w-4 animate-spin"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                        />
-                      </svg>
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-                        <polyline points="14 2 14 8 20 8" />
-                        <line x1="16" y1="13" x2="8" y2="13" />
-                        <line x1="16" y1="17" x2="8" y2="17" />
-                        <polyline points="10 9 9 9 8 9" />
-                      </svg>
-                      Generate Documents
-                    </>
-                  )}
+                  {generating ? "Generating..." : "Generate Documents"}
                 </button>
               )}
-
-              {/* Step 3-bis: Re-analyse — visible when client requested changes */}
               {submission.status === "pending_review" &&
                 submission.client_feedback && (
                   <button
@@ -538,105 +417,24 @@ export default function SubmissionDetailPage() {
                     onClick={handleAnalyse}
                     disabled={analysing}
                   >
-                    {analysing ? (
-                      <>
-                        <svg
-                          className="h-4 w-4 animate-spin"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          />
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                          />
-                        </svg>
-                        Re-analysing...
-                      </>
-                    ) : (
-                      <>
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <polyline points="4 7 12 21 20 7" />
-                          <polyline points="8 7 12 3 16 7" />
-                        </svg>
-                        Re-analyse Brief
-                      </>
-                    )}
+                    {analysing ? "Re-analysing..." : "Re-analyse Brief"}
                   </button>
                 )}
-
-              {/* Step 5/6: Approve & Send — visible when pending_review, no client feedback */}
-              {(submission.status === "pending_review" &&
+              {((submission.status === "pending_review" &&
                 !submission.client_feedback) ||
-              submission.status === "contract_sent" ? (
+                submission.status === "contract_sent") && (
                 <button
                   className="btn-primary text-sm"
                   onClick={handleDeliver}
                   disabled={delivering}
                 >
-                  {delivering ? (
-                    <>
-                      <svg
-                        className="h-4 w-4 animate-spin"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                        />
-                      </svg>
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      Approve & Send
-                    </>
-                  )}
+                  {delivering ? "Sending..." : "Approve & Send"}
                 </button>
-              ) : null}
+              )}
             </div>
           </div>
 
-          {/* Deliver success — Show portal link */}
+          {/* Deliver success */}
           {portalUrl && (
             <div className="mt-4 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.05] p-5">
               <div className="flex items-start gap-3">
@@ -680,48 +478,7 @@ export default function SubmissionDetailPage() {
                       }}
                       className="btn-secondary text-xs shrink-0"
                     >
-                      {portalCopied ? (
-                        <>
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="text-emerald-400"
-                          >
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                          Copied
-                        </>
-                      ) : (
-                        <>
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <rect
-                              x="9"
-                              y="9"
-                              width="13"
-                              height="13"
-                              rx="2"
-                              ry="2"
-                            />
-                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                          </svg>
-                          Copy
-                        </>
-                      )}
+                      {portalCopied ? "Copied" : "Copy"}
                     </button>
                     <a
                       href={portalUrl}
@@ -729,20 +486,6 @@ export default function SubmissionDetailPage() {
                       rel="noopener noreferrer"
                       className="btn-primary text-xs shrink-0"
                     >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                        <polyline points="15 3 21 3 21 9" />
-                        <line x1="10" y1="14" x2="21" y2="3" />
-                      </svg>
                       Preview
                     </a>
                   </div>
@@ -751,7 +494,6 @@ export default function SubmissionDetailPage() {
             </div>
           )}
 
-          {/* Action errors */}
           {analyseError && (
             <div className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
               {analyseError}
@@ -769,10 +511,10 @@ export default function SubmissionDetailPage() {
           )}
         </div>
 
-        {/* Content grid */}
-        <div className="grid gap-8 lg:grid-cols-3">
-          {/* Main content — spans 2 columns */}
-          <div className="space-y-8 lg:col-span-2">
+        {/* Grid: Main 3/4 + Sidebar 1/4 */}
+        <div className="grid gap-8 lg:grid-cols-4">
+          {/* Main content — 3 columns for more width */}
+          <div className="space-y-8 lg:col-span-3">
             {/* Original brief */}
             <div className="card space-y-4">
               <h2 className="heading-md text-foreground">Original Brief</h2>
@@ -787,7 +529,7 @@ export default function SubmissionDetailPage() {
             {submission.parsed_data && (
               <div className="card space-y-5">
                 <h2 className="heading-md text-foreground">Parsed Data</h2>
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-3">
                   <div className="space-y-1">
                     <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                       Project Type
@@ -844,7 +586,6 @@ export default function SubmissionDetailPage() {
                     </p>
                   </div>
                 </div>
-
                 <div className="space-y-1">
                   <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Core Problem
@@ -853,7 +594,6 @@ export default function SubmissionDetailPage() {
                     {submission.parsed_data.core_problem}
                   </p>
                 </div>
-
                 <div className="space-y-1">
                   <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Desired Outcome
@@ -862,7 +602,6 @@ export default function SubmissionDetailPage() {
                     {submission.parsed_data.desired_outcome}
                   </p>
                 </div>
-
                 {submission.parsed_data.technical_details.length > 0 && (
                   <div className="space-y-3">
                     <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -882,7 +621,6 @@ export default function SubmissionDetailPage() {
                     </div>
                   </div>
                 )}
-
                 <div className="flex items-center gap-2 rounded-lg border border-border-subtle bg-white/[0.03] px-3 py-1.5 w-fit">
                   <span className="text-xs text-muted-foreground">
                     Clarity Score
@@ -919,77 +657,10 @@ export default function SubmissionDetailPage() {
                 </div>
               )}
 
-            {/* ── Client Feedback — shown when client requested changes ── */}
-            {submission.client_feedback && (
-              <div className="card space-y-4 border-amber-500/20">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10">
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="text-amber-400"
-                      >
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-sm font-semibold text-amber-400">
-                      Client Requested Changes
-                    </h3>
-                  </div>
-                  <button
-                    onClick={handleDismissFeedback}
-                    disabled={dismissingFeedback}
-                    className="btn-ghost text-xs text-muted-foreground hover:text-foreground shrink-0"
-                  >
-                    {dismissingFeedback ? (
-                      "Dismissing..."
-                    ) : (
-                      <>
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <line x1="18" y1="6" x2="6" y2="18" />
-                          <line x1="6" y1="6" x2="18" y2="18" />
-                        </svg>
-                        Dismiss & Re-send
-                      </>
-                    )}
-                  </button>
-                </div>
-                <div className="rounded-lg border border-border-subtle bg-white/[0.02] p-3">
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {submission.client_feedback}
-                  </p>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Review the feedback above, then re-analyse and re-generate the
-                  documents, or dismiss and re-send the current proposal without
-                  changes.
-                </p>
-              </div>
-            )}
-
-            {/* Analysis — full width with 2-column grid */}
+            {/* Analysis — full width inside 3/4 column */}
             {submission.analysis ? (
               <div className="card space-y-6">
                 <h2 className="heading-md text-foreground">AI Analysis</h2>
-
-                {/* Stats grid — 2 columns */}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1 rounded-lg border border-border-subtle bg-white/[0.02] p-4">
                     <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -1008,8 +679,6 @@ export default function SubmissionDetailPage() {
                     </p>
                   </div>
                 </div>
-
-                {/* Stats row */}
                 <div className="flex items-center gap-3 flex-wrap">
                   <div className="rounded-lg border border-border-subtle bg-white/[0.03] px-3 py-1.5">
                     <span className="text-xs text-muted-foreground">
@@ -1039,8 +708,6 @@ export default function SubmissionDetailPage() {
                     </span>
                   </div>
                 </div>
-
-                {/* Phases — 2 column grid */}
                 <div className="space-y-3">
                   <p className="text-sm font-semibold text-foreground">
                     Development Phases
@@ -1077,8 +744,6 @@ export default function SubmissionDetailPage() {
                     ))}
                   </div>
                 </div>
-
-                {/* Risk flags */}
                 {submission.analysis.risk_flags.length > 0 && (
                   <div className="space-y-3">
                     <p className="text-xs font-medium uppercase tracking-wider text-red-400">
@@ -1090,21 +755,6 @@ export default function SubmissionDetailPage() {
                           key={i}
                           className="flex items-start gap-2 text-sm text-muted-foreground"
                         >
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="mt-0.5 shrink-0 text-red-400"
-                          >
-                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                            <line x1="12" y1="9" x2="12" y2="13" />
-                            <line x1="12" y1="17" x2="12.01" y2="17" />
-                          </svg>
                           {item}
                         </li>
                       ))}
@@ -1125,7 +775,7 @@ export default function SubmissionDetailPage() {
             ) : null}
           </div>
 
-          {/* Sidebar */}
+          {/* Sidebar — 1 column */}
           <div className="space-y-6">
             {/* Quick actions */}
             <div className="card space-y-3">
@@ -1138,46 +788,7 @@ export default function SubmissionDetailPage() {
                   onClick={handleDeliver}
                   disabled={delivering}
                 >
-                  {delivering ? (
-                    <>
-                      <svg
-                        className="h-4 w-4 animate-spin"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                        />
-                      </svg>
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      Approve & Send to Client
-                    </>
-                  )}
+                  {delivering ? "Sending..." : "Approve & Send to Client"}
                 </button>
                 {submission.portal_token && (
                   <button
@@ -1189,24 +800,34 @@ export default function SubmissionDetailPage() {
                       )
                     }
                   >
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
                     Preview as Client
                   </button>
                 )}
               </div>
             </div>
+
+            {/* ── Client Feedback — sidebar ── */}
+            {submission.client_feedback && (
+              <div className="card space-y-3 border-amber-500/20">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-amber-400">
+                    Client Requested Changes
+                  </h3>
+                  <button
+                    onClick={handleDismissFeedback}
+                    disabled={dismissingFeedback}
+                    className="btn-ghost text-xs text-muted-foreground hover:text-foreground shrink-0"
+                  >
+                    {dismissingFeedback ? "..." : "Dismiss"}
+                  </button>
+                </div>
+                <div className="rounded-lg border border-border-subtle bg-white/[0.02] p-3">
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {submission.client_feedback}
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Contract Status */}
             {submission.contract_status && (
@@ -1237,7 +858,7 @@ export default function SubmissionDetailPage() {
           </div>
         </div>
 
-        {/* Generated Documents — full width, at the bottom */}
+        {/* Generated Documents — full width at bottom */}
         {(submission.scope_document || submission.invoice_draft) && (
           <div className="mt-8">
             <h2 className="heading-md text-foreground mb-4">
