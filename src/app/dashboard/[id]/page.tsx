@@ -23,6 +23,7 @@ export default function SubmissionDetailPage() {
   const [deliverError, setDeliverError] = useState<string | null>(null);
   const [portalUrl, setPortalUrl] = useState<string | null>(null);
   const [portalCopied, setPortalCopied] = useState(false);
+  const [dismissingFeedback, setDismissingFeedback] = useState(false);
 
   const fetchSubmission = useCallback(async () => {
     if (!id) return;
@@ -172,6 +173,29 @@ export default function SubmissionDetailPage() {
       );
     } finally {
       setDelivering(false);
+    }
+  };
+
+  const handleDismissFeedback = async () => {
+    if (!submission) return;
+
+    setDismissingFeedback(true);
+
+    try {
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      );
+      await supabase
+        .from("submissions")
+        .update({ client_feedback: null, status: "pending_review" })
+        .eq("id", submission.id);
+
+      await fetchSubmission();
+    } catch {
+      // silently fail — the page will just stay as-is
+    } finally {
+      setDismissingFeedback(false);
     }
   };
 
@@ -745,44 +769,9 @@ export default function SubmissionDetailPage() {
           )}
         </div>
 
-        {/* Generated Documents — full width, above the content grid */}
-        {(submission.scope_document || submission.invoice_draft) && (
-          <div className="mb-8">
-            <h2 className="heading-md text-foreground mb-4">
-              Generated Documents
-            </h2>
-            <div className="grid gap-6 lg:grid-cols-2">
-              {submission.scope_document && (
-                <DocumentPreview
-                  title="Scope of Work"
-                  content={submission.scope_document}
-                  onDownload={() =>
-                    handleDownloadDocument(
-                      "Scope of Work",
-                      submission.scope_document!,
-                    )
-                  }
-                />
-              )}
-              {submission.invoice_draft && (
-                <DocumentPreview
-                  title="Invoice Draft"
-                  content={submission.invoice_draft}
-                  onDownload={() =>
-                    handleDownloadDocument(
-                      "Invoice Draft",
-                      submission.invoice_draft!,
-                    )
-                  }
-                />
-              )}
-            </div>
-          </div>
-        )}
-
         {/* Content grid */}
         <div className="grid gap-8 lg:grid-cols-3">
-          {/* Main content */}
+          {/* Main content — spans 2 columns */}
           <div className="space-y-8 lg:col-span-2">
             {/* Original brief */}
             <div className="card space-y-4">
@@ -905,7 +894,7 @@ export default function SubmissionDetailPage() {
               </div>
             )}
 
-            {/* Clarification questions & answers */}
+            {/* Clarification */}
             {submission.clarification_questions &&
               submission.clarification_questions.length > 0 && (
                 <div className="card space-y-4">
@@ -930,21 +919,98 @@ export default function SubmissionDetailPage() {
                 </div>
               )}
 
-            {/* Analysis */}
-            {submission.analysis ? (
-              <div className="card space-y-5">
-                <h2 className="heading-md text-foreground">AI Analysis</h2>
-
-                <div className="space-y-1">
-                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Project Summary
-                  </p>
-                  <p className="text-sm text-foreground leading-relaxed">
-                    {submission.analysis.project_summary}
+            {/* ── Client Feedback — shown when client requested changes ── */}
+            {submission.client_feedback && (
+              <div className="card space-y-4 border-amber-500/20">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10">
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="text-amber-400"
+                      >
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-sm font-semibold text-amber-400">
+                      Client Requested Changes
+                    </h3>
+                  </div>
+                  <button
+                    onClick={handleDismissFeedback}
+                    disabled={dismissingFeedback}
+                    className="btn-ghost text-xs text-muted-foreground hover:text-foreground shrink-0"
+                  >
+                    {dismissingFeedback ? (
+                      "Dismissing..."
+                    ) : (
+                      <>
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                        Dismiss & Re-send
+                      </>
+                    )}
+                  </button>
+                </div>
+                <div className="rounded-lg border border-border-subtle bg-white/[0.02] p-3">
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {submission.client_feedback}
                   </p>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Review the feedback above, then re-analyse and re-generate the
+                  documents, or dismiss and re-send the current proposal without
+                  changes.
+                </p>
+              </div>
+            )}
 
-                <div className="flex items-center gap-3">
+            {/* Analysis — full width with 2-column grid */}
+            {submission.analysis ? (
+              <div className="card space-y-6">
+                <h2 className="heading-md text-foreground">AI Analysis</h2>
+
+                {/* Stats grid — 2 columns */}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1 rounded-lg border border-border-subtle bg-white/[0.02] p-4">
+                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Project Summary
+                    </p>
+                    <p className="text-sm text-foreground leading-relaxed">
+                      {submission.analysis.project_summary}
+                    </p>
+                  </div>
+                  <div className="space-y-1 rounded-lg border border-border-subtle bg-white/[0.02] p-4">
+                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Recommended Approach
+                    </p>
+                    <p className="text-sm text-foreground leading-relaxed">
+                      {submission.analysis.recommended_approach}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Stats row */}
+                <div className="flex items-center gap-3 flex-wrap">
                   <div className="rounded-lg border border-border-subtle bg-white/[0.03] px-3 py-1.5">
                     <span className="text-xs text-muted-foreground">
                       Complexity:{" "}
@@ -968,26 +1034,18 @@ export default function SubmissionDetailPage() {
                     <span className="text-sm font-medium text-foreground">
                       $
                       {submission.analysis.estimated_budget_usd.low.toLocaleString()}
-                      – $
+                      –$
                       {submission.analysis.estimated_budget_usd.high.toLocaleString()}
                     </span>
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Recommended Approach
-                  </p>
-                  <p className="text-sm text-foreground leading-relaxed">
-                    {submission.analysis.recommended_approach}
-                  </p>
-                </div>
-
+                {/* Phases — 2 column grid */}
                 <div className="space-y-3">
-                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Phases
+                  <p className="text-sm font-semibold text-foreground">
+                    Development Phases
                   </p>
-                  <div className="space-y-3">
+                  <div className="grid gap-4 sm:grid-cols-2">
                     {submission.analysis.phases.map((phase, i) => (
                       <div
                         key={i}
@@ -1020,6 +1078,7 @@ export default function SubmissionDetailPage() {
                   </div>
                 </div>
 
+                {/* Risk flags */}
                 {submission.analysis.risk_flags.length > 0 && (
                   <div className="space-y-3">
                     <p className="text-xs font-medium uppercase tracking-wider text-red-400">
@@ -1149,43 +1208,7 @@ export default function SubmissionDetailPage() {
               </div>
             </div>
 
-            {/* ── Client Feedback — shown when client requested changes ── */}
-            {submission.client_feedback && (
-              <div className="card space-y-3 border-amber-500/20">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10">
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="text-amber-400"
-                    >
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-sm font-semibold text-amber-400">
-                    Client Requested Changes
-                  </h3>
-                </div>
-                <div className="rounded-lg border border-border-subtle bg-white/[0.02] p-3">
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {submission.client_feedback}
-                  </p>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Review the feedback above, then re-analyse and re-generate the
-                  documents before sending a revised proposal.
-                </p>
-              </div>
-            )}
-
-            {/* Payment/Contract Status — Stripe deposit disabled for MVP v1.0 */}
+            {/* Contract Status */}
             {submission.contract_status && (
               <div className="card space-y-3">
                 <h3 className="text-sm font-semibold text-foreground">
@@ -1213,6 +1236,41 @@ export default function SubmissionDetailPage() {
             )}
           </div>
         </div>
+
+        {/* Generated Documents — full width, at the bottom */}
+        {(submission.scope_document || submission.invoice_draft) && (
+          <div className="mt-8">
+            <h2 className="heading-md text-foreground mb-4">
+              Generated Documents
+            </h2>
+            <div className="grid gap-6 lg:grid-cols-2">
+              {submission.scope_document && (
+                <DocumentPreview
+                  title="Scope of Work"
+                  content={submission.scope_document}
+                  onDownload={() =>
+                    handleDownloadDocument(
+                      "Scope of Work",
+                      submission.scope_document!,
+                    )
+                  }
+                />
+              )}
+              {submission.invoice_draft && (
+                <DocumentPreview
+                  title="Invoice Draft"
+                  content={submission.invoice_draft}
+                  onDownload={() =>
+                    handleDownloadDocument(
+                      "Invoice Draft",
+                      submission.invoice_draft!,
+                    )
+                  }
+                />
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
