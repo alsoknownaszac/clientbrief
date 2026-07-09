@@ -5,7 +5,8 @@ export type SubmissionStatus =
   | "pending_review"
   | "contract_sent"
   | "contract_signed"
-  | "delivered";
+  | "delivered"
+  | "rejected";
 
 export type ContractStatus = "sent" | "signed" | null;
 

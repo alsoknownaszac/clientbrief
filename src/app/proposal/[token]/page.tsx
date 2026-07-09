@@ -77,6 +77,48 @@ export default function ProposalPortalPage() {
     }
   };
 
+  const handleReject = async () => {
+    if (!submission) return;
+    if (
+      !confirm(
+        "Are you sure you want to reject this proposal? This cannot be undone.",
+      )
+    )
+      return;
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/contract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          submission_id: submission.id,
+          action: "reject",
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setError(data.error || "Could not reject the proposal.");
+        return;
+      }
+
+      setActionSuccess(
+        "You have rejected this proposal. The agency has been notified.",
+      );
+      setSubmission({
+        ...submission,
+        status: "rejected",
+      });
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   // Stripe payment disabled for MVP v1.0
   // const handlePay = async () => { ... };
 
@@ -517,6 +559,45 @@ export default function ProposalPortalPage() {
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                       I Accept — Let&rsquo;s Start
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Reject Proposal */}
+              <div className="rounded-xl border border-red-500/20 bg-red-500/[0.02] p-5 space-y-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-red-400">
+                    Reject Proposal
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    This proposal does not meet your needs. Rejecting cannot be
+                    undone.
+                  </p>
+                </div>
+                <button
+                  onClick={handleReject}
+                  disabled={submitting}
+                  className="btn-ghost w-full text-sm text-red-400 hover:text-red-300"
+                >
+                  {submitting ? (
+                    <>Processing...</>
+                  ) : (
+                    <>
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                      Reject
                     </>
                   )}
                 </button>

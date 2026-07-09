@@ -32,6 +32,10 @@ const statusConfig: Record<
     label: "Delivered",
     dotClass: "status-dot-emerald",
   },
+  rejected: {
+    label: "Rejected",
+    dotClass: "status-dot-red",
+  },
 };
 
 interface StatusBadgeProps {

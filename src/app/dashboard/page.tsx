@@ -14,6 +14,7 @@ const STATUS_TABS: { label: string; value: SubmissionStatus | "all" }[] = [
   { label: "Needs Clarification", value: "needs_clarification" },
   { label: "Ready for Analysis", value: "ready_for_analysis" },
   { label: "Delivered", value: "delivered" },
+  { label: "Rejected", value: "rejected" },
 ];
 
 export default function DashboardPage() {

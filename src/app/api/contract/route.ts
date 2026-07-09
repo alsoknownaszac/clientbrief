@@ -154,6 +154,32 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // ── Handle "reject" action ────────────────────────────────────────
+    if (action === "reject") {
+      const { error: updateErr } = await (supabase.from("submissions") as any)
+        .update({
+          status: "rejected",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", submission_id);
+
+      if (updateErr) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Failed to update submission",
+            details: updateErr,
+          },
+          { status: 500 },
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        action: "rejected",
+      });
+    }
+
     // ── Default: Generate contract (existing logic) ───────────────────
 
     if (!submission.scope_document || !submission.analysis) {
