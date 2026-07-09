@@ -74,13 +74,10 @@ export async function POST(req: NextRequest) {
 
     // ── Handle "accept" action (client signs the proposal) ────────────
     if (action === "accept") {
-      const signedDocument = `# SIGNED PROJECT SERVICES AGREEMENT\n\n**Client:** ${submission.client_name}\n**Email:** ${submission.client_email}\n**Signed on:** ${new Date().toISOString()}\n**Acceptance Method:** Electronic (portal)\n**IP:** ${req.headers.get("x-forwarded-for") ?? "unknown"}\n\n---\n\n${submission.scope_document ?? ""}`;
-
       const { error: updateErr } = await (supabase.from("submissions") as any)
         .update({
           contract_status: "signed",
           contract_signed_at: new Date().toISOString(),
-          signed_scope_document: signedDocument,
           status: "contract_signed",
           updated_at: new Date().toISOString(),
         })

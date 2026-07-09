@@ -504,7 +504,7 @@ export default function ProposalPortalPage() {
         {!isAlreadySigned && !actionSuccess && (
           <div className="card space-y-6">
             <h2 className="heading-md text-foreground">Next Steps</h2>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4">
               {/* Accept */}
               <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.02] p-5 space-y-3">
                 <div>
