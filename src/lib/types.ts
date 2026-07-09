@@ -48,6 +48,7 @@ export interface Submission {
   deposit_paid_at?: string;
   portal_token?: string;
   client_feedback?: string;
+  change_request_count?: number;
   created_at: string;
   updated_at: string;
 }

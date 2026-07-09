@@ -530,8 +530,15 @@ export default function ProposalPortalPage() {
                   </h3>
                   <p className="text-xs text-muted-foreground mt-1">
                     Something is not quite right? Let the agency know what needs
-                    to be adjusted.
+                    to be adjusted. You can request up to 3 changes.
                   </p>
+                  {submission.change_request_count != null &&
+                    submission.change_request_count > 0 && (
+                      <p className="text-xs text-amber-400/70">
+                        {submission.change_request_count} of 3 changes used
+                        &middot; {3 - submission.change_request_count} remaining
+                      </p>
+                    )}
                 </div>
                 <textarea
                   value={feedback}

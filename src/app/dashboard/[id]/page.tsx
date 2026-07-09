@@ -826,6 +826,13 @@ export default function SubmissionDetailPage() {
                     {submission.client_feedback}
                   </p>
                 </div>
+                {submission.change_request_count != null &&
+                  submission.change_request_count > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {submission.change_request_count} of 3 changes used
+                      &middot; {3 - submission.change_request_count} remaining
+                    </p>
+                  )}
               </div>
             )}
 

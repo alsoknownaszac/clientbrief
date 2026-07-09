@@ -113,10 +113,24 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      // Enforce 3-change-request limit
+      const currentCount = (submission.change_request_count as number) ?? 0;
+      if (currentCount >= 3) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              "You have reached the maximum of 3 change requests. Please accept the proposal or contact the agency directly.",
+          },
+          { status: 400 },
+        );
+      }
+
       const { error: updateErr } = await (supabase.from("submissions") as any)
         .update({
           client_feedback: feedback,
           status: "pending_review",
+          change_request_count: currentCount + 1,
           updated_at: new Date().toISOString(),
         })
         .eq("id", submission_id);
@@ -135,6 +149,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         action: "changes_requested",
+        change_request_count: currentCount + 1,
+        remaining_changes: 3 - (currentCount + 1),
       });
     }
 
